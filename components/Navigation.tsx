@@ -1,10 +1,10 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { cn } from "@/lib/utils"
-import { Icons } from "@/components/icons"
+import * as React from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
+import { Icons } from "@/components/icons";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -13,7 +13,9 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
-} from "@/components/ui/navigation-menu"
+} from "@/components/ui/navigation-menu";
+import { useSession, signIn, signOut } from "next-auth/react";
+import { Button } from "@/components/ui/button";
 
 const components: { title: string; href: string; description: string }[] = [
   {
@@ -31,10 +33,18 @@ const components: { title: string; href: string; description: string }[] = [
     href: "/learn",
     description: "Educational resources about MTUCoin and blockchain technology.",
   },
-]
+];
 
 export function Navigation() {
-  const pathname = usePathname()
+  const pathname = usePathname();
+  const { data: session, status } = useSession();
+
+  console.log("Session data:", session);
+  console.log("Session status:", status);
+
+  if (status === "loading") {
+    return <p>Loading...</p>;
+  }
 
   return (
     <NavigationMenu className="justify-between max-w-full px-4 py-2">
@@ -58,7 +68,9 @@ export function Navigation() {
                   >
                     <Icons.logo className="h-6 w-6" />
                     <div className="mb-2 mt-4 text-lg font-medium">MTUCoin</div>
-                    <p className="text-sm leading-tight text-muted-foreground">The future of digital currency.</p>
+                    <p className="text-sm leading-tight text-muted-foreground">
+                      The future of digital currency.
+                    </p>
                   </a>
                 </NavigationMenuLink>
               </li>
@@ -72,19 +84,34 @@ export function Navigation() {
         </NavigationMenuItem>
       </NavigationMenuList>
       <NavigationMenuList>
-        <NavigationMenuItem>
-          <Link href="/auth/signin" legacyBehavior passHref>
-            <NavigationMenuLink className={navigationMenuTriggerStyle()}>Sign In</NavigationMenuLink>
-          </Link>
-        </NavigationMenuItem>
-        <NavigationMenuItem>
-          <Link href="/auth/signup" legacyBehavior passHref>
-            <NavigationMenuLink className={navigationMenuTriggerStyle()}>Sign Up</NavigationMenuLink>
-          </Link>
-        </NavigationMenuItem>
+        {session ? (
+          <>
+            <NavigationMenuItem>
+              <span className="text-sm">Welcome, {session.user?.name || session.user?.email}!</span>
+            </NavigationMenuItem>
+            <NavigationMenuItem>
+              <Button onClick={() => signOut()} className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+                Sign Out
+              </Button>
+            </NavigationMenuItem>
+          </>
+        ) : (
+          <>
+            <NavigationMenuItem>
+              <Button onClick={() => signIn("google")} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                Sign In with Google
+              </Button>
+            </NavigationMenuItem>
+            <NavigationMenuItem>
+              <Button onClick={() => signIn("credentials", { callbackUrl: "/dashboard" })} className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                Sign In with Credentials
+              </Button>
+            </NavigationMenuItem>
+          </>
+        )}
       </NavigationMenuList>
     </NavigationMenu>
-  )
+  );
 }
 
 const ListItem = React.forwardRef<React.ElementRef<"a">, React.ComponentPropsWithoutRef<"a">>(
@@ -105,8 +132,7 @@ const ListItem = React.forwardRef<React.ElementRef<"a">, React.ComponentPropsWit
           </a>
         </NavigationMenuLink>
       </li>
-    )
+    );
   },
-)
-ListItem.displayName = "ListItem"
-
+);
+ListItem.displayName = "ListItem";

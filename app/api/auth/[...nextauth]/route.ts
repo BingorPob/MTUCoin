@@ -1,83 +1,100 @@
-import NextAuth from "next-auth"
-import Providers from "next-auth/providers";
-import CredentialsProvider from "next-auth/providers/credentials"
-import { compare } from "bcryptjs"
-import type { NextAuthOptions } from "next-auth"
+import NextAuth from 'next-auth';
+import GoogleProvider from 'next-auth/providers/google';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import { MongoDBAdapter } from '@next-auth/mongodb-adapter';
+import clientPromise from '@/lib/mongodb';
+import { compare } from 'bcryptjs';
+import type { NextAuthOptions } from 'next-auth';
+import type { MongoClient } from 'mongodb';
 
-// This is a mock user database - in production, use a real database
-const users = [
-  {
-    id: "1",
-    name: "Demo User",
-    email: "demo@example.com",
-    // Password: "password123"
-    password: "$2a$10$8r78.89o/u8929N8.89o/u8929N8.89o/u8929",
-  },
-]
+interface AuthenticatedUser {
+  id: string;
+  name: string;
+  email: string;
+}
 
-export default NextAuth({
+const clientId = process.env.GOOGLE_CLIENT_ID;
+const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+
+if (!clientId || !clientSecret) {
+  throw new Error('Missing environment variables for Google OAuth');
+}
+
+const authOptions: NextAuthOptions = {
   providers: [
-    Providers.Google({
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    GoogleProvider({
+      clientId: clientId!,
+      clientSecret: clientSecret!,
     }),
-  ],
-  // Optional: Add other NextAuth.js options here
-});
-
-export const authOptions: NextAuthOptions = {
-  providers: [
     CredentialsProvider({
-      name: "Credentials",
+      name: 'Credentials',
       credentials: {
-        email: { label: "Email", type: "text" },
-        password: { label: "Password", type: "password" },
+        email: { label: 'Email', type: 'text' },
+        password: { label: 'Password', type: 'password' },
       },
-      async authorize(credentials) {
+      async authorize(credentials): Promise<AuthenticatedUser | null> {
+        console.log('Authorizing user:', credentials?.email);
+
         if (!credentials?.email || !credentials?.password) {
-          return null
+          console.log('Missing email or password');
+          return null;
         }
 
-        const user = users.find((user) => user.email === credentials.email)
+        // Connect to the database
+        const client: MongoClient = await clientPromise;
+        const db = client.db('JelqAI');
+        const usersCollection = db.collection('users');
+
+        // Find the user by email
+        const user = await usersCollection.findOne({ email: credentials.email });
         if (!user) {
-          return null
+          console.log('User not found');
+          return null;
         }
 
-        const isPasswordValid = await compare(credentials.password, user.password)
+        // Compare the hashed password with the provided password
+        const isPasswordValid = await compare(credentials.password, user.password);
         if (!isPasswordValid) {
-          return null
+          console.log('Invalid password');
+          return null;
         }
 
+        // Return the user object if authentication is successful
+        console.log('User authenticated:', user);
         return {
-          id: user.id,
+          id: user._id.toString(),
           name: user.name,
           email: user.email,
-        }
+        };
       },
     }),
   ],
   pages: {
-    signIn: "/auth/signin",
-    signUp: "/auth/signup",
+    signIn: '/auth/signin',
+    signOut: '/auth/signout',
+    error: '/auth/error', // Optional
+    verifyRequest: '/auth/verify-request', // Optional
+    newUser: '/auth/new-user', // Optional
   },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id
+        token.id = user.id;
       }
-      return token
+      console.log('JWT token:', token);
+      return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id as string
+        session.user.id = token.id as string;
       }
-      return session
+      console.log('Session:', session);
+      return session;
     },
   },
   secret: process.env.NEXTAUTH_SECRET,
-}
+  adapter: MongoDBAdapter(clientPromise),
+};
 
-const handler = NextAuth(authOptions)
-
-export { handler as GET, handler as POST }
-
+const handler = NextAuth(authOptions);
+export { handler as GET, handler as POST };

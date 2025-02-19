@@ -1,45 +1,44 @@
-"use client"
+"use client";
 
-import type React from "react"
-
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { signIn } from "next-auth/react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import Link from "next/link"
+import type React from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import Link from "next/link";
 
 interface AuthFormProps {
-  mode: "signin" | "signup"
+  mode: "signin" | "signup";
 }
 
 export function AuthForm({ mode }: AuthFormProps) {
-  const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
     confirmPassword: "",
-  })
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setIsLoading(true)
+    e.preventDefault();
+    setError(null);
+    setIsLoading(true);
 
     try {
       if (mode === "signup") {
         if (formData.password !== formData.confirmPassword) {
-          throw new Error("Passwords do not match")
+          throw new Error("Passwords do not match");
         }
 
         // Register the user
-        const res = await fetch("/api/auth/register", {
+        const res = await fetch("/api/auth/signup", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -47,11 +46,11 @@ export function AuthForm({ mode }: AuthFormProps) {
             email: formData.email,
             password: formData.password,
           }),
-        })
+        });
 
         if (!res.ok) {
-          const data = await res.json()
-          throw new Error(data.message || "Failed to register")
+          const data = await res.json();
+          throw new Error(data.message || "Failed to register");
         }
       }
 
@@ -60,20 +59,20 @@ export function AuthForm({ mode }: AuthFormProps) {
         redirect: false,
         email: formData.email,
         password: formData.password,
-      })
+      });
 
       if (result?.error) {
-        throw new Error(result.error)
+        throw new Error(result.error);
       }
 
-      router.push("/dashboard")
-      router.refresh()
+      router.push("/dashboard");
+      router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong")
+      setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <Card className="w-[350px]">
@@ -161,4 +160,3 @@ export function AuthForm({ mode }: AuthFormProps) {
     </Card>
   )
 }
-
