@@ -1,10 +1,11 @@
-"use client";
+"use client"
 
-import * as React from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
-import { Icons } from "@/components/icons";
+import * as React from "react"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { useSession, signOut } from "next-auth/react"
+import { cn } from "@/lib/utils"
+import { Icons } from "@/components/icons"
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -13,38 +14,38 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
-} from "@/components/ui/navigation-menu";
-import { useSession, signIn, signOut } from "next-auth/react";
-import { Button } from "@/components/ui/button";
+} from "@/components/ui/navigation-menu"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Button } from "@/components/ui/button"
+import { User } from "lucide-react"
 
 const components: { title: string; href: string; description: string }[] = [
   {
     title: "Dashboard",
     href: "/dashboard",
-    description: "View your MTUCoin balance and transactions.",
+    description: "View your JelqAI dashboard and progress.",
   },
   {
     title: "Marketplace",
     href: "/marketplace",
-    description: "Buy and sell MTUCoin and related products.",
+    description: "Explore and purchase JelqAI products and services.",
   },
   {
     title: "Learn",
     href: "/learn",
-    description: "Educational resources about MTUCoin and blockchain technology.",
+    description: "Educational resources about JelqAI and male enhancement.",
   },
-];
+]
 
 export function Navigation() {
-  const pathname = usePathname();
-  const { data: session, status } = useSession();
-
-  console.log("Session data:", session);
-  console.log("Session status:", status);
-
-  if (status === "loading") {
-    return <p>Loading...</p>;
-  }
+  const pathname = usePathname()
+  const { data: session, status } = useSession()
 
   return (
     <NavigationMenu className="justify-between max-w-full px-4 py-2">
@@ -52,7 +53,7 @@ export function Navigation() {
         <NavigationMenuItem>
           <Link href="/" legacyBehavior passHref>
             <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-              <Icons.logo className="mr-2 h-6 w-6" /> MTUCoin
+              <Icons.logo className="mr-2 h-6 w-6" /> JelqAI
             </NavigationMenuLink>
           </Link>
         </NavigationMenuItem>
@@ -67,10 +68,8 @@ export function Navigation() {
                     href="/"
                   >
                     <Icons.logo className="h-6 w-6" />
-                    <div className="mb-2 mt-4 text-lg font-medium">MTUCoin</div>
-                    <p className="text-sm leading-tight text-muted-foreground">
-                      The future of digital currency.
-                    </p>
+                    <div className="mb-2 mt-4 text-lg font-medium">JelqAI</div>
+                    <p className="text-sm leading-tight text-muted-foreground">Advanced AI-powered male enhancement.</p>
                   </a>
                 </NavigationMenuLink>
               </li>
@@ -84,34 +83,52 @@ export function Navigation() {
         </NavigationMenuItem>
       </NavigationMenuList>
       <NavigationMenuList>
-        {session ? (
-          <>
-            <NavigationMenuItem>
-              <span className="text-sm">Welcome, {session.user?.name || session.user?.email}!</span>
-            </NavigationMenuItem>
-            <NavigationMenuItem>
-              <Button onClick={() => signOut()} className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
-                Sign Out
-              </Button>
-            </NavigationMenuItem>
-          </>
+        {status === "loading" ? (
+          <NavigationMenuItem>
+            <Button variant="ghost" disabled>
+              Loading...
+            </Button>
+          </NavigationMenuItem>
+        ) : status === "authenticated" && session?.user ? (
+          <NavigationMenuItem>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  <span>{session.user.name || session.user.email}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard">Dashboard</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/settings">Settings</Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => signOut()} className="text-red-600">
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </NavigationMenuItem>
         ) : (
           <>
             <NavigationMenuItem>
-              <Button onClick={() => signIn("google")} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                Sign In with Google
-              </Button>
+              <Link href="/auth/signin" legacyBehavior passHref>
+                <NavigationMenuLink className={navigationMenuTriggerStyle()}>Sign In</NavigationMenuLink>
+              </Link>
             </NavigationMenuItem>
             <NavigationMenuItem>
-              <Button onClick={() => signIn("credentials", { callbackUrl: "/dashboard" })} className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
-                Sign In with Credentials
-              </Button>
+              <Link href="/auth/signup" legacyBehavior passHref>
+                <NavigationMenuLink className={navigationMenuTriggerStyle()}>Sign Up</NavigationMenuLink>
+              </Link>
             </NavigationMenuItem>
           </>
         )}
       </NavigationMenuList>
     </NavigationMenu>
-  );
+  )
 }
 
 const ListItem = React.forwardRef<React.ElementRef<"a">, React.ComponentPropsWithoutRef<"a">>(
@@ -132,7 +149,8 @@ const ListItem = React.forwardRef<React.ElementRef<"a">, React.ComponentPropsWit
           </a>
         </NavigationMenuLink>
       </li>
-    );
+    )
   },
-);
-ListItem.displayName = "ListItem";
+)
+ListItem.displayName = "ListItem"
+

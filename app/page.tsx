@@ -25,6 +25,14 @@ export default function Home() {
           >
             Sign Out
           </button>
+          <div className="mt-4">
+            <Button asChild>
+              <Link href="/create-wallet">Create Wallet</Link>
+            </Button>
+            <Button asChild>
+              <Link href="/access-wallet">Access Wallet</Link>
+            </Button>
+          </div>
         </div>
       ) : (
         <>

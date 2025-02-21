@@ -1,39 +1,39 @@
-import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
-import clientPromise from "@/lib/mongodb";
+import { NextResponse } from 'next/server';
+import { hash } from 'bcryptjs';
+import clientPromise from '@/lib/mongodb'; // Update import to match the new TypeScript file
+import { MongoClient } from 'mongodb';
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
-    const { email, password, name } = await req.json();
+    const { name, email, password } = await req.json();
 
-    if (!email || !password || !name) {
-      return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
+    if (!name || !email || !password) {
+      return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
     }
 
-    const client = await clientPromise;
-    const db = client.db("JelqAI");
+    const client: MongoClient = await clientPromise;
+    const db = client.db('JelqAI');
+    const usersCollection = db.collection('users');
 
-    // Check if the user already exists
-    const existingUser = await db.collection("users").findOne({ email });
-
+    // Check if user already exists
+    const existingUser = await usersCollection.findOne({ email });
     if (existingUser) {
-      return NextResponse.json({ message: "User already exists" }, { status: 409 });
+      return NextResponse.json({ message: 'User already exists' }, { status: 400 });
     }
 
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Hash password
+    const hashedPassword = await hash(password, 12);
 
-    // Insert the new user
-    const newUser = {
+    // Create user
+    const result = await usersCollection.insertOne({
+      name,
       email,
       password: hashedPassword,
-      name,
-    };
-    await db.collection("users").insertOne(newUser);
+    });
 
-    return NextResponse.json({ message: "User created successfully" }, { status: 201 });
+    return NextResponse.json({ message: 'User created successfully', userId: result.insertedId }, { status: 201 });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+    console.error('Signup error:', error);
+    return NextResponse.json({ message: 'An error occurred during signup' }, { status: 500 });
   }
 }
